@@ -1,0 +1,154 @@
+// GAG2 Giveaways – database schema
+// PostgreSQL + Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum GiveawayStatus {
+  ACTIVE
+  ENDED
+}
+
+enum TokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model User {
+  id             String    @id @default(cuid())
+  username       String    @unique
+  // Email is optional: Roblox sign-in provides no email address.
+  email          String?   @unique
+  // Null for accounts created via Discord/Roblox sign-in.
+  passwordHash   String?
+  role           Role      @default(USER)
+  emailVerified  DateTime?
+  // Anti-abuse: IP captured at registration (fraud signal, never the only factor)
+  registrationIp String?
+  banned         Boolean   @default(false)
+  bannedAt       DateTime?
+  banReason      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  entries          Entry[]
+  wins             Winner[]
+  oauthAccounts    OAuthAccount[]
+  createdGiveaways Giveaway[] @relation("GiveawayCreator")
+  auditLogs        AuditLog[] @relation("AuditActor")
+
+  @@index([registrationIp])
+  @@index([createdAt])
+}
+
+// One-time tokens for email verification and password reset.
+// Only the SHA-256 hash of the token is stored.
+model AuthToken {
+  id         String    @id @default(cuid())
+  identifier String // user email (lowercased)
+  tokenHash  String    @unique
+  type       TokenType
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([identifier, type])
+}
+
+model Giveaway {
+  id           String         @id @default(cuid())
+  title        String
+  description  String
+  prize        String
+  status       GiveawayStatus @default(ACTIVE)
+  endsAt       DateTime
+  endedAt      DateTime? // set when closed (early or on expiry)
+  winnersCount Int            @default(1)
+  createdById  String
+  createdBy    User           @relation("GiveawayCreator", fields: [createdById], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  entries Entry[]
+  winners Winner[]
+
+  @@index([status, endsAt])
+}
+
+model Entry {
+  id         String   @id @default(cuid())
+  giveawayId String
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Anti-abuse: IP captured at entry time (fraud signal, never the only factor)
+  ip         String?
+  // Soft-removal by an admin (suspicious entry review). Removed entries are
+  // excluded from winner draws but kept for the audit trail.
+  removed       Boolean   @default(false)
+  removedAt     DateTime?
+  removedReason String?
+  createdAt     DateTime  @default(now())
+
+  // Prevents duplicate entries at the database level.
+  @@unique([giveawayId, userId])
+  @@index([userId])
+  @@index([giveawayId, ip])
+}
+
+model Winner {
+  id         String   @id @default(cuid())
+  giveawayId String
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drawnAt    DateTime @default(now())
+
+  @@unique([giveawayId, userId])
+}
+
+// Linked external sign-in identities (Discord, Roblox).
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  provider          String // "discord" | "roblox"
+  providerAccountId String
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// Fixed-window rate limiting backed by the database (works on serverless).
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+}
+
+// Moderation / audit trail for all important actions.
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String // e.g. USER_REGISTERED, ENTRY_CREATED, GIVEAWAY_DRAWN, USER_BANNED
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetType String? // "user" | "giveaway" | "entry"
+  targetId   String?
+  ip         String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+}

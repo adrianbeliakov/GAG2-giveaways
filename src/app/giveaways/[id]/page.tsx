@@ -1,0 +1,109 @@
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { closeExpiredGiveaways } from "@/lib/giveaways";
+import { Countdown } from "@/components/countdown";
+import { StatusBadge } from "@/components/status-badge";
+import { EnterButton } from "@/components/enter-button";
+
+export const dynamic = "force-dynamic";
+
+export default async function GiveawayPage({ params }: { params: { id: string } }) {
+  await closeExpiredGiveaways();
+
+  const giveaway = await prisma.giveaway.findUnique({
+    where: { id: params.id },
+    include: {
+      _count: { select: { entries: { where: { removed: false } } } },
+      winners: { include: { user: { select: { username: true } } }, orderBy: { drawnAt: "asc" } },
+    },
+  });
+  if (!giveaway) notFound();
+
+  const session = await auth();
+  let hasEntered = false;
+  let isBanned = false;
+  let isVerified = false;
+
+  if (session?.user?.id) {
+    const [entry, me] = await Promise.all([
+      prisma.entry.findUnique({
+        where: { giveawayId_userId: { giveawayId: giveaway.id, userId: session.user.id } },
+      }),
+      prisma.user.findUnique({ where: { id: session.user.id } }),
+    ]);
+    hasEntered = Boolean(entry && !entry.removed);
+    isBanned = Boolean(me?.banned);
+    isVerified = Boolean(me?.emailVerified);
+  }
+
+  const isActive = giveaway.status === "ACTIVE" && giveaway.endsAt > new Date();
+
+  return (
+    <article className="mx-auto max-w-2xl animate-rise">
+      <div className="card p-6 sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{giveaway.title}</h1>
+          <StatusBadge active={isActive} />
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="chip bg-gold-deep text-gold">🏆 {giveaway.prize}</span>
+          <span className="chip border border-line text-fog">
+            {giveaway._count.entries} {giveaway._count.entries === 1 ? "entry" : "entries"}
+          </span>
+          <span className="chip border border-line text-fog">
+            {giveaway.winnersCount} {giveaway.winnersCount === 1 ? "winner" : "winners"}
+          </span>
+        </div>
+
+        <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-fog">
+          {giveaway.description}
+        </p>
+
+        <div className="mt-6">
+          <Countdown
+            startsAt={giveaway.createdAt.toISOString()}
+            endsAt={giveaway.endsAt.toISOString()}
+            ended={!isActive}
+          />
+          <p className="mt-2 text-xs text-fog">
+            {isActive ? "Closes" : "Closed"}{" "}
+            {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(
+              giveaway.endedAt ?? giveaway.endsAt
+            )}
+          </p>
+        </div>
+
+        <div className="mt-6 border-t border-line pt-6">
+          <EnterButton
+            giveawayId={giveaway.id}
+            isLoggedIn={Boolean(session?.user?.id)}
+            isVerified={isVerified}
+            isBanned={isBanned}
+            hasEntered={hasEntered}
+            isActive={isActive}
+          />
+        </div>
+      </div>
+
+      {giveaway.winners.length > 0 && (
+        <div className="card mt-4 border-gold/30 p-6">
+          <h2 className="font-display text-lg font-semibold text-gold">
+            {giveaway.winners.length === 1 ? "Winner" : "Winners"}
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {giveaway.winners.map((w) => (
+              <li key={w.id} className="chip bg-gold-deep text-gold">
+                🎉 {w.user.username}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-fog">
+            Drawn randomly from all valid entries.
+          </p>
+        </div>
+      )}
+    </article>
+  );
+}
