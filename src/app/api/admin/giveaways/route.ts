@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guards";
 import { giveawaySchema } from "@/lib/validation";
+import { announceGiveaway } from "@/lib/discord-webhook";
 import { audit } from "@/lib/audit";
 import { getClientIp, isSameOrigin } from "@/lib/ip";
 
@@ -35,6 +36,16 @@ export async function POST(req: Request) {
     targetId: giveaway.id,
     ip: getClientIp(req),
     metadata: { title: giveaway.title },
+  });
+
+  // Announce to Discord (optional, fail-safe — never blocks creation).
+  await announceGiveaway({
+    id: giveaway.id,
+    title: giveaway.title,
+    prize: giveaway.prize,
+    description: giveaway.description,
+    endsAt: giveaway.endsAt,
+    winnersCount: giveaway.winnersCount,
   });
 
   return NextResponse.json({ ok: true, id: giveaway.id });

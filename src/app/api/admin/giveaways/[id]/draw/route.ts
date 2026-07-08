@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guards";
 import { drawWinners } from "@/lib/giveaways";
+import { announceWinners } from "@/lib/discord-webhook";
 import { audit } from "@/lib/audit";
 import { getClientIp, isSameOrigin } from "@/lib/ip";
 
 /**
  * Draw random winners (admin only). Ends the giveaway first if still active,
  * then selects `winnersCount` winners fairly from valid entries only
- * (not removed, user not banned) using a CSPRNG.
+ * (not removed, user not banned) using a ticket-weighted CSPRNG draw.
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
@@ -40,6 +41,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (winnerIds.length === 0) {
     return NextResponse.json({ ok: true, winners: 0, message: "No valid entries to draw from." });
   }
+
+  // Announce to Discord (optional, fail-safe — never blocks the draw result).
+  const winners = await prisma.user.findMany({
+    where: { id: { in: winnerIds } },
+    select: { username: true },
+  });
+  await announceWinners(
+    { id: giveaway.id, title: giveaway.title, prize: giveaway.prize },
+    winners.map((w) => w.username)
+  );
 
   return NextResponse.json({ ok: true, winners: winnerIds.length });
 }
