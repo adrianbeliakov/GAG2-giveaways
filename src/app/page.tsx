@@ -143,6 +143,7 @@ export default async function HomePage() {
                   title: g.title,
                   description: g.description,
                   prize: g.prize,
+                  imageUrl: g.imageUrl,
                   status: g.status,
                   createdAt: g.createdAt,
                   endsAt: g.endsAt,

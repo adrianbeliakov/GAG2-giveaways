@@ -46,6 +46,7 @@ export async function POST(req: Request) {
     description: giveaway.description,
     endsAt: giveaway.endsAt,
     winnersCount: giveaway.winnersCount,
+    imageUrl: giveaway.imageUrl,
   });
 
   return NextResponse.json({ ok: true, id: giveaway.id });

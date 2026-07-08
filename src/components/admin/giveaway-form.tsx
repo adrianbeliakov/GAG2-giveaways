@@ -8,6 +8,7 @@ type Initial = {
   title?: string;
   description?: string;
   prize?: string;
+  imageUrl?: string;
   endsAt?: string; // datetime-local value
   winnersCount?: number;
 };
@@ -20,10 +21,13 @@ export function GiveawayForm({ initial }: { initial?: Initial }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [prize, setPrize] = useState(initial?.prize ?? "");
+  const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
   const [endsAt, setEndsAt] = useState(initial?.endsAt ?? "");
   const [winnersCount, setWinnersCount] = useState(initial?.winnersCount ?? 1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const previewable = imageUrl.trim().startsWith("https://");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +43,7 @@ export function GiveawayForm({ initial }: { initial?: Initial }) {
             title,
             description,
             prize,
+            imageUrl: imageUrl.trim(),
             endsAt: new Date(endsAt).toISOString(),
             winnersCount,
           }),
@@ -94,6 +99,35 @@ export function GiveawayForm({ initial }: { initial?: Initial }) {
             onChange={(e) => setWinnersCount(Number(e.target.value))}
           />
         </div>
+      </div>
+      <div>
+        <label htmlFor="imageUrl" className="label">
+          Prize image link <span className="normal-case text-fog">(optional)</span>
+        </label>
+        <input
+          id="imageUrl"
+          type="url"
+          maxLength={500}
+          className="input"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://i.postimg.cc/…  (must start with https://)"
+        />
+        <p className="mt-1 text-xs text-fog">
+          Tip: upload the picture to postimages.org (free, no account) and paste the
+          &quot;Direct link&quot; here. Avoid Discord attachment links — they expire.
+        </p>
+        {previewable && (
+          <div className="mt-3 overflow-hidden rounded-xl border border-line">
+            {/* Live preview of whatever URL the admin pasted */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl.trim()}
+              alt="Prize image preview"
+              className="max-h-56 w-full object-cover"
+            />
+          </div>
+        )}
       </div>
       <div>
         <label htmlFor="endsAt" className="label">Ends at (your local time)</label>

@@ -56,7 +56,24 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
 
   return (
     <article className="mx-auto max-w-2xl animate-rise">
-      <div className="card p-6 sm:p-8">
+      <div className="card overflow-hidden p-6 sm:p-8">
+        {giveaway.imageUrl && (
+          <div className="relative -mx-6 -mt-6 mb-6 aspect-[16/9] overflow-hidden border-b border-line sm:-mx-8 sm:-mt-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={giveaway.imageUrl}
+              alt={`${giveaway.title} prize`}
+              className="h-full w-full object-cover"
+            />
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: "linear-gradient(180deg, transparent 55%, rgba(12,18,16,0.55))",
+              }}
+              aria-hidden
+            />
+          </div>
+        )}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="font-display text-2xl font-bold sm:text-3xl">{giveaway.title}</h1>
           <StatusBadge active={isActive} />

@@ -48,7 +48,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     select: { username: true },
   });
   await announceWinners(
-    { id: giveaway.id, title: giveaway.title, prize: giveaway.prize },
+    { id: giveaway.id, title: giveaway.title, prize: giveaway.prize, imageUrl: giveaway.imageUrl },
     winners.map((w) => w.username)
   );
 

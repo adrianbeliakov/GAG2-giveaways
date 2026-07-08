@@ -7,6 +7,7 @@ type GiveawayCardData = {
   title: string;
   description: string;
   prize: string;
+  imageUrl: string | null;
   status: "ACTIVE" | "ENDED";
   createdAt: Date;
   endsAt: Date;
@@ -22,6 +23,26 @@ export function GiveawayCard({ g, index = 0 }: { g: GiveawayCardData; index?: nu
       className="card-lux group flex animate-rise flex-col p-5"
       style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
     >
+      {/* Prize image banner (optional) */}
+      {g.imageUrl && (
+        <div className="relative -mx-5 -mt-5 mb-4 aspect-[16/9] overflow-hidden border-b border-line">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={g.imageUrl}
+            alt={`${g.title} prize`}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: "linear-gradient(180deg, transparent 55%, rgba(12,18,16,0.55))",
+            }}
+            aria-hidden
+          />
+        </div>
+      )}
+
       {/* Corner bloom that brightens on hover */}
       <div
         className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-0 transition-opacity duration-500 group-hover:opacity-100"

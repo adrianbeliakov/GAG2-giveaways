@@ -70,6 +70,9 @@ model Giveaway {
   title        String
   description  String
   prize        String
+  // Optional https image URL shown on cards, the giveaway page, and in
+  // Discord announcements. Nullable, so adding it is backward-compatible.
+  imageUrl     String?
   status       GiveawayStatus @default(ACTIVE)
   endsAt       DateTime
   endedAt      DateTime? // set when closed (early or on expiry)

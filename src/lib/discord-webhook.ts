@@ -25,6 +25,7 @@ type DiscordEmbed = {
   fields?: Array<{ name: string; value: string; inline?: boolean }>;
   footer?: { text: string };
   timestamp?: string;
+  image?: { url: string };
 };
 
 /** Fires a webhook with the given embed; never throws. */
@@ -60,6 +61,7 @@ export async function announceGiveaway(g: {
   description: string;
   endsAt: Date;
   winnersCount: number;
+  imageUrl?: string | null;
 }): Promise<void> {
   const link = `${SITE_URL()}/giveaways/${g.id}`;
   await send(
@@ -68,6 +70,7 @@ export async function announceGiveaway(g: {
       url: link,
       description: g.description.length > 180 ? `${g.description.slice(0, 177)}…` : g.description,
       color: LEAF,
+      ...(g.imageUrl ? { image: { url: g.imageUrl } } : {}),
       fields: [
         { name: "🏆 Prize", value: g.prize, inline: true },
         {
@@ -91,7 +94,7 @@ export async function announceGiveaway(g: {
 
 /** Announces drawn winners for a giveaway. */
 export async function announceWinners(
-  g: { id: string; title: string; prize: string },
+  g: { id: string; title: string; prize: string; imageUrl?: string | null },
   winnerUsernames: string[]
 ): Promise<void> {
   if (winnerUsernames.length === 0) return;
@@ -104,6 +107,7 @@ export async function announceWinners(
       url: link,
       description: names,
       color: GOLD,
+      ...(g.imageUrl ? { image: { url: g.imageUrl } } : {}),
       fields: [
         { name: "Prize", value: g.prize, inline: true },
         { name: "Details", value: link },
