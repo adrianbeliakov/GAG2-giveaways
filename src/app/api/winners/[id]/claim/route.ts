@@ -33,10 +33,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await audit({
       action: "PRIZE_CLAIM_CONFIRMED",
       actorId: user.id,
-      targetType: "winner",
-      targetId: winner.id,
+      targetType: "giveaway",
+      targetId: winner.giveawayId,
       ip: getClientIp(req),
-      metadata: { giveawayId: winner.giveawayId },
+      metadata: { winnerId: winner.id },
     });
   }
 
