@@ -48,7 +48,9 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
     tickets = totalTickets(providers);
   }
 
-  const isActive = giveaway.status === "ACTIVE" && giveaway.endsAt > new Date();
+  const isUpcoming = giveaway.status === "ACTIVE" && giveaway.startsAt > new Date();
+  const isActive =
+    giveaway.status === "ACTIVE" && !isUpcoming && giveaway.endsAt > new Date();
   const robloxLoginEnabled = Boolean(
     process.env.ROBLOX_CLIENT_ID && process.env.ROBLOX_CLIENT_SECRET
   );
@@ -78,7 +80,11 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
         )}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="font-display text-2xl font-bold sm:text-3xl">{giveaway.title}</h1>
-          <StatusBadge active={isActive} />
+          {isUpcoming ? (
+            <span className="chip bg-gold-deep text-gold">📅 Starting soon</span>
+          ) : (
+            <StatusBadge active={isActive} />
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -96,20 +102,51 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
         </p>
 
         <div className="mt-6">
-          <Countdown
-            startsAt={giveaway.createdAt.toISOString()}
-            endsAt={giveaway.endsAt.toISOString()}
-            ended={!isActive}
-          />
-          <p className="mt-2 text-xs text-fog">
-            {isActive ? "Closes" : "Closed"}{" "}
-            {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(
-              giveaway.endedAt ?? giveaway.endsAt
-            )}
-          </p>
+          {isUpcoming ? (
+            <>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gold">
+                Opens in
+              </p>
+              <Countdown
+                startsAt={giveaway.createdAt.toISOString()}
+                endsAt={giveaway.startsAt.toISOString()}
+                ended={false}
+              />
+              <p className="mt-2 text-xs text-fog">
+                Opens{" "}
+                {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(
+                  giveaway.startsAt
+                )}
+              </p>
+            </>
+          ) : (
+            <>
+              <Countdown
+                startsAt={giveaway.startsAt.toISOString()}
+                endsAt={giveaway.endsAt.toISOString()}
+                ended={!isActive}
+              />
+              <p className="mt-2 text-xs text-fog">
+                {isActive ? "Closes" : "Closed"}{" "}
+                {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(
+                  giveaway.endedAt ?? giveaway.endsAt
+                )}
+              </p>
+            </>
+          )}
         </div>
 
         <div className="mt-6 border-t border-line pt-6">
+          {isUpcoming ? (
+            <div className="rounded-xl border border-gold/40 bg-gold-deep/30 p-4">
+              <p className="text-sm font-semibold text-gold">⏳ Not open yet</p>
+              <p className="mt-1 text-sm text-fog">
+                Entries open when the countdown ends. Come back then — and connect your
+                accounts on your profile now so your entry is worth maximum tickets from
+                the first second.
+              </p>
+            </div>
+          ) : (
           <EnterButton
             giveawayId={giveaway.id}
             isLoggedIn={Boolean(session?.user?.id)}
@@ -123,6 +160,7 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
             hasDiscord={hasDiscord}
             discordLoginEnabled={discordLoginEnabled}
           />
+          )}
         </div>
       </div>
 

@@ -50,6 +50,8 @@ export const giveawaySchema = z.object({
     .union([httpsUrl, z.literal("")])
     .transform((v) => (v ? v : null))
     .optional(),
+  // Optional future start; omitted/empty means "starts immediately".
+  startsAt: z.coerce.date().optional(),
   endsAt: z.coerce.date(),
   winnersCount: z.coerce.number().int().min(1).max(50),
 });

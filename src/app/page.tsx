@@ -10,10 +10,16 @@ export default async function HomePage() {
   // Lazy close: status is accurate even between cron runs.
   await closeExpiredGiveaways();
 
-  const [giveaways, userCount, entryCount, winnerCount, recentWinners] = await Promise.all([
+  const now = new Date();
+  const [giveaways, upcomingGiveaways, userCount, entryCount, winnerCount, recentWinners] = await Promise.all([
     prisma.giveaway.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", startsAt: { lte: now } },
       orderBy: { endsAt: "asc" },
+      include: { _count: { select: { entries: { where: { removed: false } } } } },
+    }),
+    prisma.giveaway.findMany({
+      where: { status: "ACTIVE", startsAt: { gt: now } },
+      orderBy: { startsAt: "asc" },
       include: { _count: { select: { entries: { where: { removed: false } } } } },
     }),
     prisma.user.count(),
@@ -146,6 +152,7 @@ export default async function HomePage() {
                   imageUrl: g.imageUrl,
                   status: g.status,
                   createdAt: g.createdAt,
+                  startsAt: g.startsAt,
                   endsAt: g.endsAt,
                   participants: g._count.entries,
                 }}
@@ -154,6 +161,40 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {/* ========================= STARTING SOON ========================== */}
+      {upcomingGiveaways.length > 0 && (
+        <section>
+          <div className="mb-5">
+            <p className="eyebrow" style={{ color: "#F2C14E" }}>
+              Mark your calendar
+            </p>
+            <h2 className="mt-1 font-display text-2xl font-semibold sm:text-3xl">
+              Starting soon
+            </h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {upcomingGiveaways.map((g, i) => (
+              <GiveawayCard
+                key={g.id}
+                index={i}
+                g={{
+                  id: g.id,
+                  title: g.title,
+                  description: g.description,
+                  prize: g.prize,
+                  imageUrl: g.imageUrl,
+                  status: g.status,
+                  createdAt: g.createdAt,
+                  startsAt: g.startsAt,
+                  endsAt: g.endsAt,
+                  participants: g._count.entries,
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ========================= RECENT WINNERS ========================= */}
       {recentWinners.length > 0 && (

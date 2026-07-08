@@ -52,6 +52,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (giveaway.status !== "ACTIVE" || giveaway.endsAt <= new Date()) {
     return NextResponse.json({ error: "This giveaway has ended." }, { status: 409 });
   }
+  if (giveaway.startsAt > new Date()) {
+    return NextResponse.json(
+      { error: "This giveaway hasn't started yet — come back when the countdown ends!" },
+      { status: 409 }
+    );
+  }
 
   const ip = getClientIp(req);
 

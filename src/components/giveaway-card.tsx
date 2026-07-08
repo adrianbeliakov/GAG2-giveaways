@@ -10,12 +10,15 @@ type GiveawayCardData = {
   imageUrl: string | null;
   status: "ACTIVE" | "ENDED";
   createdAt: Date;
+  startsAt: Date;
   endsAt: Date;
   participants: number;
 };
 
 export function GiveawayCard({ g, index = 0 }: { g: GiveawayCardData; index?: number }) {
-  const active = g.status === "ACTIVE" && g.endsAt > new Date();
+  const now = new Date();
+  const upcoming = g.status === "ACTIVE" && g.startsAt > now;
+  const active = g.status === "ACTIVE" && !upcoming && g.endsAt > now;
 
   return (
     <Link
@@ -57,7 +60,11 @@ export function GiveawayCard({ g, index = 0 }: { g: GiveawayCardData; index?: nu
         <h3 className="font-display text-lg font-semibold leading-snug transition-colors group-hover:text-leaf">
           {g.title}
         </h3>
-        <StatusBadge active={active} />
+        {upcoming ? (
+          <span className="chip bg-gold-deep text-gold">📅 Starting soon</span>
+        ) : (
+          <StatusBadge active={active} />
+        )}
       </div>
 
       <p className="mt-2 line-clamp-2 text-sm text-fog">{g.description}</p>
@@ -72,11 +79,24 @@ export function GiveawayCard({ g, index = 0 }: { g: GiveawayCardData; index?: nu
       </div>
 
       <div className="mt-5">
-        <Countdown
-          startsAt={g.createdAt.toISOString()}
-          endsAt={g.endsAt.toISOString()}
-          ended={!active}
-        />
+        {upcoming ? (
+          <>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gold">
+              Opens in
+            </p>
+            <Countdown
+              startsAt={g.createdAt.toISOString()}
+              endsAt={g.startsAt.toISOString()}
+              ended={false}
+            />
+          </>
+        ) : (
+          <Countdown
+            startsAt={g.startsAt.toISOString()}
+            endsAt={g.endsAt.toISOString()}
+            ended={!active}
+          />
+        )}
       </div>
     </Link>
   );

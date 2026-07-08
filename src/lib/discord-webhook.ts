@@ -60,13 +60,15 @@ export async function announceGiveaway(g: {
   prize: string;
   description: string;
   endsAt: Date;
+  startsAt?: Date | null;
   winnersCount: number;
   imageUrl?: string | null;
 }): Promise<void> {
   const link = `${SITE_URL()}/giveaways/${g.id}`;
+  const upcoming = Boolean(g.startsAt && g.startsAt > new Date());
   await send(
     {
-      title: `🌱 New giveaway: ${g.title}`,
+      title: upcoming ? `📅 Upcoming giveaway: ${g.title}` : `🌱 New giveaway: ${g.title}`,
       url: link,
       description: g.description.length > 180 ? `${g.description.slice(0, 177)}…` : g.description,
       color: LEAF,
@@ -78,17 +80,26 @@ export async function announceGiveaway(g: {
           value: String(g.winnersCount),
           inline: true,
         },
+        ...(upcoming
+          ? [
+              {
+                name: "🚀 Starts",
+                value: `<t:${Math.floor(g.startsAt!.getTime() / 1000)}:R>`,
+                inline: true,
+              },
+            ]
+          : []),
         {
           name: "⏰ Closes",
           value: `<t:${Math.floor(g.endsAt.getTime() / 1000)}:R>`,
           inline: true,
         },
-        { name: "Enter here", value: link },
+        { name: upcoming ? "Get ready here" : "Enter here", value: link },
       ],
       footer: { text: "Free to enter · winners drawn randomly" },
       timestamp: new Date().toISOString(),
     },
-    "🎁 A new giveaway just went live!"
+    upcoming ? "📅 A new giveaway is scheduled — set your alarms!" : "🎁 A new giveaway just went live!"
   );
 }
 

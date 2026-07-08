@@ -45,6 +45,7 @@ export async function POST(req: Request) {
     prize: giveaway.prize,
     description: giveaway.description,
     endsAt: giveaway.endsAt,
+    startsAt: giveaway.startsAt,
     winnersCount: giveaway.winnersCount,
     imageUrl: giveaway.imageUrl,
   });

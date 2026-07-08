@@ -9,6 +9,7 @@ type Initial = {
   description?: string;
   prize?: string;
   imageUrl?: string;
+  startsAt?: string; // datetime-local value; empty = starts immediately
   endsAt?: string; // datetime-local value
   winnersCount?: number;
 };
@@ -22,6 +23,7 @@ export function GiveawayForm({ initial }: { initial?: Initial }) {
   const [description, setDescription] = useState(initial?.description ?? "");
   const [prize, setPrize] = useState(initial?.prize ?? "");
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
+  const [startsAt, setStartsAt] = useState(initial?.startsAt ?? "");
   const [endsAt, setEndsAt] = useState(initial?.endsAt ?? "");
   const [winnersCount, setWinnersCount] = useState(initial?.winnersCount ?? 1);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export function GiveawayForm({ initial }: { initial?: Initial }) {
             description,
             prize,
             imageUrl: imageUrl.trim(),
+            ...(startsAt ? { startsAt: new Date(startsAt).toISOString() } : {}),
             endsAt: new Date(endsAt).toISOString(),
             winnersCount,
           }),
@@ -129,16 +132,34 @@ export function GiveawayForm({ initial }: { initial?: Initial }) {
           </div>
         )}
       </div>
-      <div>
-        <label htmlFor="endsAt" className="label">Ends at (your local time)</label>
-        <input
-          id="endsAt"
-          type="datetime-local"
-          required
-          className="input"
-          value={endsAt}
-          onChange={(e) => setEndsAt(e.target.value)}
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="startsAt" className="label">
+            Starts at <span className="normal-case text-fog">(optional — empty = now)</span>
+          </label>
+          <input
+            id="startsAt"
+            type="datetime-local"
+            className="input"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-fog">
+            Set a future time to schedule: it shows as &quot;Starting soon&quot; and opens
+            automatically.
+          </p>
+        </div>
+        <div>
+          <label htmlFor="endsAt" className="label">Ends at (your local time)</label>
+          <input
+            id="endsAt"
+            type="datetime-local"
+            required
+            className="input"
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+          />
+        </div>
       </div>
       {error && <p className="text-sm text-rose">{error}</p>}
       <button type="submit" disabled={loading} className="btn-primary">

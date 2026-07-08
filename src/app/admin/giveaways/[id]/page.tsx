@@ -69,6 +69,7 @@ export default async function AdminGiveawayDetailPage({ params }: { params: { id
             description: giveaway.description,
             prize: giveaway.prize,
             imageUrl: giveaway.imageUrl ?? "",
+            startsAt: toDatetimeLocal(giveaway.startsAt),
             endsAt: toDatetimeLocal(giveaway.endsAt),
             winnersCount: giveaway.winnersCount,
           }}

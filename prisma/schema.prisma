@@ -73,6 +73,9 @@ model Giveaway {
   // Optional https image URL shown on cards, the giveaway page, and in
   // Discord announcements. Nullable, so adding it is backward-compatible.
   imageUrl     String?
+  // When the giveaway opens for entries. Defaults to creation time, so
+  // existing rows and normal giveaways behave exactly as before.
+  startsAt     DateTime       @default(now())
   status       GiveawayStatus @default(ACTIVE)
   endsAt       DateTime
   endedAt      DateTime? // set when closed (early or on expiry)
