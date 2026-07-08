@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ConnectAccountButton } from "@/components/connect-account-button";
 
 type Props = {
   giveawayId: string;
@@ -11,6 +12,8 @@ type Props = {
   isBanned: boolean;
   hasEntered: boolean;
   isActive: boolean;
+  hasRoblox: boolean;
+  robloxLoginEnabled: boolean;
 };
 
 /** One-click giveaway entry with inline state feedback. */
@@ -36,14 +39,45 @@ export function EnterButton(props: Props) {
   if (!props.isVerified) {
     return (
       <div className="text-sm text-fog">
-        Verify your email to enter.{" "}
-        <ResendLink />
+        Verify your email to enter. <ResendLink />
       </div>
     );
   }
   if (entered) {
     return (
-      <div className="chip bg-leaf-deep px-4 py-2 text-sm text-leaf">✓ You&apos;re in — good luck!</div>
+      <div className="chip bg-leaf-deep px-4 py-2 text-sm text-leaf">
+        ✓ You&apos;re in — good luck!
+      </div>
+    );
+  }
+
+  // Prizes are delivered in Roblox — a linked Roblox account is required.
+  if (!props.hasRoblox) {
+    return (
+      <div className="rounded-xl border border-line bg-soil p-4">
+        <p className="text-sm font-semibold">
+          🎁 Prizes are delivered in Roblox
+        </p>
+        <p className="mt-1 text-sm text-fog">
+          Connect your Roblox account so we can deliver your prize if you win — it takes
+          10 seconds and you only do it once.
+        </p>
+        {props.robloxLoginEnabled ? (
+          <div className="mt-3">
+            <ConnectAccountButton
+              provider="roblox"
+              callbackUrl={`/giveaways/${props.giveawayId}`}
+              className="btn-primary"
+            >
+              Connect Roblox to enter
+            </ConnectAccountButton>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-gold">
+            Roblox connections are temporarily unavailable — please try again soon.
+          </p>
+        )}
+      </div>
     );
   }
 

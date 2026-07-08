@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/guards";
 import { getClientIp, isSameOrigin } from "@/lib/ip";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/audit";
+import { hasRobloxLinked } from "@/lib/oauth";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   if (!isSameOrigin(req)) {
@@ -25,6 +26,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (!user.emailVerified) {
     return NextResponse.json(
       { error: "Verify your email before entering giveaways." },
+      { status: 403 }
+    );
+  }
+
+  // Prizes are delivered in Roblox: a linked Roblox account is required to
+  // enter. (Any login method is fine — the link is what matters.)
+  const roblox = await hasRobloxLinked(user.id);
+  if (!roblox) {
+    return NextResponse.json(
+      { error: "Connect your Roblox account to enter — prizes are delivered in Roblox." },
       { status: 403 }
     );
   }

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { closeExpiredGiveaways } from "@/lib/giveaways";
+import { hasRobloxLinked } from "@/lib/oauth";
 import { Countdown } from "@/components/countdown";
 import { StatusBadge } from "@/components/status-badge";
 import { EnterButton } from "@/components/enter-button";
@@ -24,20 +25,26 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
   let hasEntered = false;
   let isBanned = false;
   let isVerified = false;
+  let hasRoblox = false;
 
   if (session?.user?.id) {
-    const [entry, me] = await Promise.all([
+    const [entry, me, roblox] = await Promise.all([
       prisma.entry.findUnique({
         where: { giveawayId_userId: { giveawayId: giveaway.id, userId: session.user.id } },
       }),
       prisma.user.findUnique({ where: { id: session.user.id } }),
+      hasRobloxLinked(session.user.id),
     ]);
     hasEntered = Boolean(entry && !entry.removed);
     isBanned = Boolean(me?.banned);
     isVerified = Boolean(me?.emailVerified);
+    hasRoblox = roblox;
   }
 
   const isActive = giveaway.status === "ACTIVE" && giveaway.endsAt > new Date();
+  const robloxLoginEnabled = Boolean(
+    process.env.ROBLOX_CLIENT_ID && process.env.ROBLOX_CLIENT_SECRET
+  );
 
   return (
     <article className="mx-auto max-w-2xl animate-rise">
@@ -83,6 +90,8 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
             isBanned={isBanned}
             hasEntered={hasEntered}
             isActive={isActive}
+            hasRoblox={hasRoblox}
+            robloxLoginEnabled={robloxLoginEnabled}
           />
         </div>
       </div>
@@ -99,9 +108,7 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-fog">
-            Drawn randomly from all valid entries.
-          </p>
+          <p className="mt-3 text-xs text-fog">Drawn randomly from all valid entries.</p>
         </div>
       )}
     </article>

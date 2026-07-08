@@ -1,6 +1,7 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
+import { verifyLinkIntent, LINK_INTENT_COOKIE } from "@/lib/link-token";
 import type { User } from "@prisma/client";
 
 export type OAuthProviderId = "discord" | "roblox";
@@ -26,6 +27,26 @@ function requestIp(): string | null {
   }
 }
 
+/** Reads (and consumes) a pending link-intent cookie, if any. */
+function pendingLinkUserId(): string | null {
+  try {
+    const jar = cookies();
+    const value = jar.get(LINK_INTENT_COOKIE)?.value;
+    const userId = verifyLinkIntent(value);
+    if (value) {
+      // Best-effort single-use: clear it whether valid or not.
+      try {
+        jar.delete(LINK_INTENT_COOKIE);
+      } catch {
+        /* read-only context; the 10-minute expiry still bounds it */
+      }
+    }
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
 /** Derives a valid, unique username from a provider profile. */
 async function uniqueUsername(preferred: string | null | undefined): Promise<string> {
   let base = (preferred ?? "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20);
@@ -44,33 +65,82 @@ async function uniqueUsername(preferred: string | null | undefined): Promise<str
 /**
  * Finds or creates the local user for an external sign-in.
  *
- * - An existing (provider, providerAccountId) link wins.
- * - Otherwise, a Discord profile with a provider-verified email that matches
- *   an existing account is linked to that account (and verifies its email).
- * - Otherwise a new user is created.
+ * Resolution order:
+ * 1. A pending "link intent" (set from the profile page) attaches this
+ *    external account to the CURRENT logged-in user — never creating or
+ *    switching to another account.
+ * 2. An existing (provider, providerAccountId) link wins.
+ * 3. A Discord profile with a provider-verified email that matches an
+ *    existing account is linked to that account (and verifies its email).
+ * 4. Otherwise a new user is created.
  *
  * Verification policy:
  * - Discord: `emailVerified` mirrors Discord's own email verification.
  * - Roblox: no email exists, but the identity is a real, authenticated Roblox
  *   account — exactly the audience of this site — so the account is treated
- *   as verified and may enter giveaways. (Their Roblox username is also what
- *   you need for prize delivery.)
+ *   as verified and may enter giveaways. (Their Roblox identity is also what
+ *   prize delivery needs.) Linking a Roblox account therefore also verifies
+ *   a previously unverified user.
  */
 export async function ensureOAuthUser(
   provider: OAuthProviderId,
   providerAccountId: string,
   profile: NormalizedProfile
 ): Promise<User> {
+  const ip = requestIp();
+
   const existingLink = await prisma.oAuthAccount.findUnique({
     where: { provider_providerAccountId: { provider, providerAccountId } },
     include: { user: true },
   });
+
+  // ---- 1. Link-intent flow: attach to the current user. ----
+  const linkUserId = pendingLinkUserId();
+  if (linkUserId) {
+    const intendedUser = await prisma.user.findUnique({ where: { id: linkUserId } });
+
+    if (intendedUser) {
+      if (existingLink) {
+        // Already linked. To the same user: nothing to do. To a DIFFERENT
+        // user: refuse to steal it — stay signed in as the intended user so
+        // the session never switches unexpectedly.
+        return existingLink.user.id === intendedUser.id ? existingLink.user : intendedUser;
+      }
+
+      await prisma.oAuthAccount.create({
+        data: { provider, providerAccountId, userId: intendedUser.id },
+      });
+
+      // Linking a real Roblox identity verifies the account (site policy —
+      // matches how Roblox-first signups are treated).
+      const user =
+        provider === "roblox" && !intendedUser.emailVerified
+          ? await prisma.user.update({
+              where: { id: intendedUser.id },
+              data: { emailVerified: new Date() },
+            })
+          : intendedUser;
+
+      await audit({
+        action: "OAUTH_ACCOUNT_LINKED",
+        actorId: user.id,
+        targetType: "user",
+        targetId: user.id,
+        ip: ip ?? undefined,
+        metadata: { provider, via: "profile_connect" },
+      });
+
+      return user;
+    }
+    // Intent for a user that no longer exists: fall through to normal flow.
+  }
+
+  // ---- 2. Existing link wins. ----
   if (existingLink) return existingLink.user;
 
-  const ip = requestIp();
   const email = profile.email?.toLowerCase() ?? null;
 
-  // Link to an existing account only when the provider vouches for the email.
+  // ---- 3. Link to an existing account when the provider vouches for the email. ----
   if (email && profile.emailVerified) {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -95,6 +165,7 @@ export async function ensureOAuthUser(
     }
   }
 
+  // ---- 4. Brand-new user. ----
   const username = await uniqueUsername(profile.username);
   const verified = provider === "roblox" || (Boolean(email) && profile.emailVerified === true);
 
@@ -139,4 +210,13 @@ export async function ensureOAuthUser(
   }
 
   return user;
+}
+
+/** True when the user has a linked Roblox account (required to enter giveaways). */
+export async function hasRobloxLinked(userId: string): Promise<boolean> {
+  const link = await prisma.oAuthAccount.findFirst({
+    where: { userId, provider: "roblox" },
+    select: { id: true },
+  });
+  return Boolean(link);
 }
