@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { providersForUsers, totalTickets } from "@/lib/entry-weight";
 import { GiveawayForm } from "@/components/admin/giveaway-form";
 import { GiveawayActions } from "@/components/admin/giveaway-actions";
 import { EntryActions } from "@/components/admin/entry-actions";
@@ -25,11 +26,18 @@ export default async function AdminGiveawayDetailPage({ params }: { params: { id
   });
   if (!giveaway) notFound();
 
+  // Live ticket counts (same source of truth the draw uses).
+  const providerMap = await providersForUsers(giveaway.entries.map((e) => e.user.id));
+
   // Highlight IPs used by more than one entry in THIS giveaway (review signal only).
   const ipCounts = new Map<string, number>();
   for (const e of giveaway.entries) {
     if (e.ip) ipCounts.set(e.ip, (ipCounts.get(e.ip) ?? 0) + 1);
   }
+
+  const totalValidTickets = giveaway.entries
+    .filter((e) => !e.removed && !e.user.banned)
+    .reduce((sum, e) => sum + totalTickets(providerMap.get(e.user.id) ?? new Set()), 0);
 
   return (
     <div className="space-y-6">
@@ -71,21 +79,24 @@ export default async function AdminGiveawayDetailPage({ params }: { params: { id
           {giveaway.entries.some((e) => e.removed)
             ? `, ${giveaway.entries.filter((e) => e.removed).length} removed`
             : ""}
-          )
+          ) · {totalValidTickets} tickets in the draw
         </h2>
         <p className="mt-1 text-xs text-fog">
-          Shared-IP flags are a review signal only — several legitimate players can share one
-          network. Removed entries are excluded from draws but kept for the audit trail.
+          Tickets = 1 base + bonus for connected accounts, computed live — the draw uses these
+          exact numbers. Shared-IP flags are a review signal only; several legitimate players
+          can share one network. Removed entries are excluded from draws but kept for the audit
+          trail.
         </p>
 
         {giveaway.entries.length === 0 ? (
           <p className="mt-4 text-sm text-fog">No entries yet.</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[680px] text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wider text-fog">
                   <th className="py-2 pr-4">User</th>
+                  <th className="py-2 pr-4">Tickets</th>
                   <th className="py-2 pr-4">Entered</th>
                   <th className="py-2 pr-4">IP</th>
                   <th className="py-2 pr-4">Flags</th>
@@ -98,6 +109,11 @@ export default async function AdminGiveawayDetailPage({ params }: { params: { id
                     <td className="py-2.5 pr-4">
                       <div className="font-semibold">{e.user.username}</div>
                       <div className="text-xs text-fog">{e.user.email}</div>
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      <span className="chip bg-leaf-deep text-leaf">
+                        🎟 {totalTickets(providerMap.get(e.user.id) ?? new Set())}
+                      </span>
                     </td>
                     <td className="py-2.5 pr-4 text-xs text-fog">
                       {new Intl.DateTimeFormat("en", { dateStyle: "short", timeStyle: "short" }).format(e.createdAt)}

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/guards";
 import { prisma } from "@/lib/prisma";
+import { providersForUsers, totalTickets } from "@/lib/entry-weight";
 import { ConnectAccountButton } from "@/components/connect-account-button";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +12,10 @@ export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/profile");
 
-  const [entered, won, linkedAccounts, recentEntries] = await Promise.all([
+  const [entered, won, providerMap, recentEntries] = await Promise.all([
     prisma.entry.count({ where: { userId: user.id, removed: false } }),
     prisma.winner.count({ where: { userId: user.id } }),
-    prisma.oAuthAccount.findMany({ where: { userId: user.id }, select: { provider: true } }),
+    providersForUsers([user.id]),
     prisma.entry.findMany({
       where: { userId: user.id, removed: false },
       orderBy: { createdAt: "desc" },
@@ -23,15 +24,22 @@ export default async function ProfilePage() {
     }),
   ]);
 
-  const providers = new Set(linkedAccounts.map((a) => a.provider));
+  const providers = providerMap.get(user.id) ?? new Set<string>();
   const hasRoblox = providers.has("roblox");
   const hasDiscord = providers.has("discord");
+  const tickets = totalTickets(providers);
+  const maxTickets = 4; // base 1 + both-connected bonus 3
+
   const discordEnabled = Boolean(
     process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
   );
   const robloxEnabled = Boolean(
     process.env.ROBLOX_CLIENT_ID && process.env.ROBLOX_CLIENT_SECRET
   );
+
+  // Extra tickets Discord would add right now (both-bonus makes it +2 once Roblox is linked).
+  const discordGain = totalTickets(new Set([...providers, "discord"])) - tickets;
+  const robloxGain = totalTickets(new Set([...providers, "roblox"])) - tickets;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -50,14 +58,23 @@ export default async function ProfilePage() {
           {new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(user.createdAt)}
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-6 grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-line bg-soil p-4 text-center">
             <div className="font-mono text-2xl font-bold text-leaf">{entered}</div>
-            <div className="mt-1 text-xs uppercase tracking-wider text-fog">Giveaways entered</div>
+            <div className="mt-1 text-xs uppercase tracking-wider text-fog">Entered</div>
           </div>
           <div className="rounded-xl border border-line bg-soil p-4 text-center">
             <div className="font-mono text-2xl font-bold text-gold">{won}</div>
-            <div className="mt-1 text-xs uppercase tracking-wider text-fog">Giveaways won</div>
+            <div className="mt-1 text-xs uppercase tracking-wider text-fog">Won</div>
+          </div>
+          <div className="rounded-xl border border-line bg-soil p-4 text-center">
+            <div className="font-mono text-2xl font-bold text-leaf">
+              {tickets}
+              <span className="text-sm text-fog">/{maxTickets}</span>
+            </div>
+            <div className="mt-1 text-xs uppercase tracking-wider text-fog">
+              Tickets per entry
+            </div>
           </div>
         </div>
 
@@ -73,7 +90,7 @@ export default async function ProfilePage() {
         <h2 className="font-display font-semibold">Connected accounts</h2>
         <p className="mt-1 text-sm text-fog">
           A connected Roblox account is required to enter giveaways — that&apos;s where prizes
-          are delivered.
+          are delivered. Every connection adds bonus tickets to all your entries.
         </p>
 
         <ul className="mt-4 space-y-3">
@@ -86,7 +103,10 @@ export default async function ProfilePage() {
               </span>
               <div>
                 <p className="text-sm font-semibold">Roblox</p>
-                <p className="text-xs text-fog">Required for prize delivery</p>
+                <p className="text-xs text-fog">
+                  Required for prize delivery
+                  {!hasRoblox && robloxGain > 0 && ` · +${robloxGain} tickets`}
+                </p>
               </div>
             </div>
             {hasRoblox ? (
@@ -107,7 +127,13 @@ export default async function ProfilePage() {
               </span>
               <div>
                 <p className="text-sm font-semibold">Discord</p>
-                <p className="text-xs text-fog">Community perks, coming soon</p>
+                <p className="text-xs text-fog">
+                  {hasDiscord
+                    ? "Boosting all your entries"
+                    : discordGain > 0
+                      ? `+${discordGain} bonus tickets on every entry`
+                      : "Community perks"}
+                </p>
               </div>
             </div>
             {hasDiscord ? (
@@ -126,7 +152,7 @@ export default async function ProfilePage() {
               </span>
               <div>
                 <p className="text-sm font-semibold">Phone number</p>
-                <p className="text-xs text-fog">Extra perks for verified numbers</p>
+                <p className="text-xs text-fog">Extra bonus tickets for verified numbers</p>
               </div>
             </div>
             <span className="chip border border-line text-fog">Coming soon</span>

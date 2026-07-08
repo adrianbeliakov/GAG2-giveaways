@@ -14,6 +14,11 @@ type Props = {
   isActive: boolean;
   hasRoblox: boolean;
   robloxLoginEnabled: boolean;
+  /** Live ticket count for this user (1 base + bonuses). */
+  tickets: number;
+  /** Whether the user already has Discord connected (for the boost hint). */
+  hasDiscord: boolean;
+  discordLoginEnabled: boolean;
 };
 
 /** One-click giveaway entry with inline state feedback. */
@@ -45,8 +50,24 @@ export function EnterButton(props: Props) {
   }
   if (entered) {
     return (
-      <div className="chip bg-leaf-deep px-4 py-2 text-sm text-leaf">
-        ✓ You&apos;re in — good luck!
+      <div>
+        <div className="chip bg-leaf-deep px-4 py-2 text-sm text-leaf">
+          ✓ You&apos;re in with {props.tickets} {props.tickets === 1 ? "ticket" : "tickets"} — good
+          luck!
+        </div>
+        {!props.hasDiscord && props.discordLoginEnabled && (
+          <p className="mt-3 text-sm text-fog">
+            💡 Boost your odds:{" "}
+            <ConnectAccountButton
+              provider="discord"
+              callbackUrl={`/giveaways/${props.giveawayId}`}
+              className="text-leaf underline"
+            >
+              connect Discord
+            </ConnectAccountButton>{" "}
+            to raise this entry from {props.tickets} to {props.tickets + 2} tickets.
+          </p>
+        )}
       </div>
     );
   }
@@ -55,12 +76,10 @@ export function EnterButton(props: Props) {
   if (!props.hasRoblox) {
     return (
       <div className="rounded-xl border border-line bg-soil p-4">
-        <p className="text-sm font-semibold">
-          🎁 Prizes are delivered in Roblox
-        </p>
+        <p className="text-sm font-semibold">🎁 Prizes are delivered in Roblox</p>
         <p className="mt-1 text-sm text-fog">
-          Connect your Roblox account so we can deliver your prize if you win — it takes
-          10 seconds and you only do it once.
+          Connect your Roblox account so we can deliver your prize if you win — it takes 10
+          seconds and you only do it once.
         </p>
         {props.robloxLoginEnabled ? (
           <div className="mt-3">
@@ -103,8 +122,16 @@ export function EnterButton(props: Props) {
   return (
     <div>
       <button onClick={enter} disabled={loading} className="btn-primary w-full sm:w-auto">
-        {loading ? "Entering…" : "Enter giveaway"}
+        {loading
+          ? "Entering…"
+          : `Enter with ${props.tickets} ${props.tickets === 1 ? "ticket" : "tickets"}`}
       </button>
+      {!props.hasDiscord && props.discordLoginEnabled && (
+        <p className="mt-2 text-xs text-fog">
+          Tip: connecting Discord on your profile makes every entry worth {props.tickets + 2}{" "}
+          tickets.
+        </p>
+      )}
       {message && <p className="mt-2 text-sm text-rose">{message}</p>}
     </div>
   );

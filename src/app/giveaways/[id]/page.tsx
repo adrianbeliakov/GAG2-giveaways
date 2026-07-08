@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { closeExpiredGiveaways } from "@/lib/giveaways";
-import { hasRobloxLinked } from "@/lib/oauth";
+import { providersForUsers, totalTickets } from "@/lib/entry-weight";
 import { Countdown } from "@/components/countdown";
 import { StatusBadge } from "@/components/status-badge";
 import { EnterButton } from "@/components/enter-button";
@@ -26,24 +26,32 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
   let isBanned = false;
   let isVerified = false;
   let hasRoblox = false;
+  let hasDiscord = false;
+  let tickets = 1;
 
   if (session?.user?.id) {
-    const [entry, me, roblox] = await Promise.all([
+    const [entry, me, providerMap] = await Promise.all([
       prisma.entry.findUnique({
         where: { giveawayId_userId: { giveawayId: giveaway.id, userId: session.user.id } },
       }),
       prisma.user.findUnique({ where: { id: session.user.id } }),
-      hasRobloxLinked(session.user.id),
+      providersForUsers([session.user.id]),
     ]);
+    const providers = providerMap.get(session.user.id) ?? new Set<string>();
     hasEntered = Boolean(entry && !entry.removed);
     isBanned = Boolean(me?.banned);
     isVerified = Boolean(me?.emailVerified);
-    hasRoblox = roblox;
+    hasRoblox = providers.has("roblox");
+    hasDiscord = providers.has("discord");
+    tickets = totalTickets(providers);
   }
 
   const isActive = giveaway.status === "ACTIVE" && giveaway.endsAt > new Date();
   const robloxLoginEnabled = Boolean(
     process.env.ROBLOX_CLIENT_ID && process.env.ROBLOX_CLIENT_SECRET
+  );
+  const discordLoginEnabled = Boolean(
+    process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
   );
 
   return (
@@ -92,6 +100,9 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
             isActive={isActive}
             hasRoblox={hasRoblox}
             robloxLoginEnabled={robloxLoginEnabled}
+            tickets={tickets}
+            hasDiscord={hasDiscord}
+            discordLoginEnabled={discordLoginEnabled}
           />
         </div>
       </div>
@@ -108,7 +119,9 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-fog">Drawn randomly from all valid entries.</p>
+          <p className="mt-3 text-xs text-fog">
+            Drawn randomly from all valid entries, weighted by bonus tickets.
+          </p>
         </div>
       )}
     </article>

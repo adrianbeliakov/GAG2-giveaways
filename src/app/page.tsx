@@ -310,7 +310,11 @@ export default async function HomePage() {
             },
             {
               q: "Can I enter more than once?",
-              a: "One entry per person per giveaway. Duplicate accounts and bots are blocked, and suspicious entries are reviewed and removed to keep the draw fair for everyone.",
+              a: "One entry per person per giveaway — but your entry can be worth multiple tickets. Duplicate accounts and bots are blocked, and suspicious entries are reviewed and removed to keep the draw fair for everyone.",
+            },
+            {
+              q: "What are bonus tickets?",
+              a: "Connecting accounts makes every entry stronger: a connected Roblox account gives +1 bonus ticket, Discord gives +1, and connecting both gives +3 — so your entry counts 4 tickets instead of 1. More tickets means a proportionally higher chance in the draw. Connecting is always free.",
             },
             {
               q: "Which login methods can I use?",
