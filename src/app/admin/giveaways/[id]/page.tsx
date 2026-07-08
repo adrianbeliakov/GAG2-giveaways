@@ -29,6 +29,18 @@ export default async function AdminGiveawayDetailPage({ params }: { params: { id
   // Live ticket counts (same source of truth the draw uses).
   const providerMap = await providersForUsers(giveaway.entries.map((e) => e.user.id));
 
+  // Roblox IDs for winners → direct profile links for prize delivery.
+  const winnerRobloxLinks = await prisma.oAuthAccount.findMany({
+    where: {
+      provider: "roblox",
+      userId: { in: giveaway.winners.map((w) => w.userId) },
+    },
+    select: { userId: true, providerAccountId: true },
+  });
+  const robloxIdByUser = new Map(
+    winnerRobloxLinks.map((l) => [l.userId, l.providerAccountId])
+  );
+
   // Highlight IPs used by more than one entry in THIS giveaway (review signal only).
   const ipCounts = new Map<string, number>();
   for (const e of giveaway.entries) {
@@ -65,11 +77,59 @@ export default async function AdminGiveawayDetailPage({ params }: { params: { id
 
       {giveaway.winners.length > 0 && (
         <div className="card border-gold/30 p-6">
-          <h2 className="font-display font-semibold text-gold">Winners</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {giveaway.winners.map((w) => (
-              <span key={w.id} className="chip bg-gold-deep text-gold">🎉 {w.user.username}</span>
-            ))}
+          <h2 className="font-display font-semibold text-gold">
+            Winners · prize delivery
+          </h2>
+          <p className="mt-1 text-xs text-fog">
+            Open the Roblox profile, send a friend request, deliver in-game. &quot;Received&quot;
+            turns green when the winner confirms on the giveaway page.
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs uppercase tracking-wider text-fog">
+                  <th className="py-2 pr-4">Winner</th>
+                  <th className="py-2 pr-4">Roblox profile</th>
+                  <th className="py-2">Received</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {giveaway.winners.map((w) => {
+                  const robloxId = robloxIdByUser.get(w.userId);
+                  return (
+                    <tr key={w.id}>
+                      <td className="py-2.5 pr-4 font-semibold">🎉 {w.user.username}</td>
+                      <td className="py-2.5 pr-4">
+                        {robloxId ? (
+                          <a
+                            href={`https://www.roblox.com/users/${robloxId}/profile`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-leaf underline"
+                          >
+                            Open profile ↗
+                          </a>
+                        ) : (
+                          <span className="text-xs text-fog">No Roblox linked</span>
+                        )}
+                      </td>
+                      <td className="py-2.5">
+                        {w.claimedAt ? (
+                          <span className="chip bg-leaf-deep text-leaf">
+                            ✓{" "}
+                            {new Intl.DateTimeFormat("en", { dateStyle: "short" }).format(
+                              w.claimedAt
+                            )}
+                          </span>
+                        ) : (
+                          <span className="chip bg-gold-deep text-gold">Pending</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

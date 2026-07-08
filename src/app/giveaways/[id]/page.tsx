@@ -6,6 +6,8 @@ import { providersForUsers, totalTickets } from "@/lib/entry-weight";
 import { Countdown } from "@/components/countdown";
 import { StatusBadge } from "@/components/status-badge";
 import { EnterButton } from "@/components/enter-button";
+import { WinnerClaim } from "@/components/winner-claim";
+import { CLAIM_STEPS, DISCORD_INVITE_URL } from "@/lib/claim-config";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +125,23 @@ export default async function GiveawayPage({ params }: { params: { id: string } 
           />
         </div>
       </div>
+
+      {(() => {
+        const myWin = session?.user?.id
+          ? giveaway.winners.find((w) => w.userId === session.user!.id)
+          : undefined;
+        return myWin ? (
+          <div className="mt-4 animate-rise">
+            <WinnerClaim
+              winnerId={myWin.id}
+              prize={giveaway.prize}
+              claimed={Boolean(myWin.claimedAt)}
+              steps={CLAIM_STEPS}
+              discordInviteUrl={DISCORD_INVITE_URL || undefined}
+            />
+          </div>
+        ) : null;
+      })()}
 
       {giveaway.winners.length > 0 && (
         <div className="card mt-4 border-gold/30 p-6">

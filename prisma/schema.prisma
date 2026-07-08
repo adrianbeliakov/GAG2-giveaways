@@ -110,12 +110,15 @@ model Entry {
 }
 
 model Winner {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   giveawayId String
-  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  giveaway   Giveaway  @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  drawnAt    DateTime @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drawnAt    DateTime  @default(now())
+  // Set when the winner confirms they received their prize in Roblox.
+  // Nullable, so adding it is backward-compatible.
+  claimedAt  DateTime?
 
   @@unique([giveawayId, userId])
 }
