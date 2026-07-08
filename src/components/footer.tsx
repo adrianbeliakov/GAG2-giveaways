@@ -32,6 +32,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/leaderboard" className="text-fog transition hover:text-leaf">
+                Leaderboard
+              </Link>
+            </li>
+            <li>
               <Link href="/register" className="text-fog transition hover:text-leaf">
                 Create an account
               </Link>

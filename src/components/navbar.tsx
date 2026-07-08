@@ -31,6 +31,9 @@ export async function Navbar() {
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          <Link href="/leaderboard" className="btn-ghost hidden md:inline-flex">
+            Leaderboard
+          </Link>
           <Link href="/winners" className="btn-ghost hidden sm:inline-flex">
             Winners
           </Link>
