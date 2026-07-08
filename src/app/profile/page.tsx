@@ -37,9 +37,16 @@ export default async function ProfilePage() {
     process.env.ROBLOX_CLIENT_ID && process.env.ROBLOX_CLIENT_SECRET
   );
 
-  // Extra tickets Discord would add right now (both-bonus makes it +2 once Roblox is linked).
-  const discordGain = totalTickets(new Set([...providers, "discord"])) - tickets;
-  const robloxGain = totalTickets(new Set([...providers, "roblox"])) - tickets;
+  // Extra tickets a connection would add right now (both-bonus makes Discord
+  // worth +2 once Roblox is linked). Built without Set spread for es5 targets.
+  const withProvider = (extra: string) => {
+    const s = new Set<string>();
+    providers.forEach((p) => s.add(p));
+    s.add(extra);
+    return s;
+  };
+  const discordGain = totalTickets(withProvider("discord")) - tickets;
+  const robloxGain = totalTickets(withProvider("roblox")) - tickets;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
