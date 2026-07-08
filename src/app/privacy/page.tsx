@@ -1,153 +1,155 @@
 export const metadata = {
-  title: "Terms of Service — GAG2 Giveaways",
-  description: "The rules for using GAG2 Giveaways and entering giveaways.",
+  title: "Privacy Policy — GAG2 Giveaways",
+  description: "How GAG2 Giveaways collects, uses, and protects your data.",
 };
 
-export default function TermsOfServicePage() {
+export default function PrivacyPolicyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 text-gray-200">
       <h1 className="mb-2 text-3xl font-bold text-green-400">
-        Terms of Service
+        Privacy Policy
       </h1>
       <p className="mb-8 text-sm text-gray-400">Last updated: July 8, 2026</p>
 
       <section className="space-y-6 leading-relaxed">
         <p>
-          Welcome to GAG2 Giveaways (the &quot;Site&quot;), a free community
-          giveaway website for the Roblox game Grow a Garden 2. By creating an
-          account or entering a giveaway, you agree to these terms.
+          GAG2 Giveaways (&quot;we&quot;, &quot;us&quot;, the &quot;Site&quot;)
+          is a community giveaway website for the Roblox game Grow a Garden 2.
+          This policy explains what information we collect, why we collect it,
+          and how it is handled. We collect only what is needed to run fair
+          giveaways.
         </p>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            1. Who can use the Site
+            1. Information we collect
           </h2>
-          <p>
-            You must meet the minimum age required to use Roblox in your
-            country. You may create only one account. Accounts created to gain
-            extra entries (alternate or duplicate accounts) may be removed and
-            their entries voided.
+          <p className="mb-2">
+            Depending on how you sign up and use the Site, we may collect:
           </p>
-        </div>
-
-        <div>
-          <h2 className="mb-2 text-xl font-semibold text-green-300">
-            2. Giveaways
-          </h2>
           <p>
-            Giveaways are free to enter — no purchase or payment is ever
-            required or accepted. Each user may enter a giveaway once. Winners
-            are selected at random from valid entries using a
-            cryptographically secure method. Winner usernames are displayed
-            publicly on the Site.
+            <strong>Account information.</strong> A username, and (if you
+            register with email) your email address and a password. Passwords
+            are stored only as secure one-way hashes — we cannot see them.
           </p>
           <p className="mt-2">
-            Prizes are in-game items delivered inside Roblox. To receive a
-            prize you must have a Roblox account we can deliver to. If a
-            winner cannot be reached or has no usable Roblox account within a
-            reasonable time, the prize may be re-drawn.
+            <strong>Linked accounts.</strong> If you log in with Discord or
+            Roblox, we receive your public identity from that service (such as
+            your user ID and username, and for Discord your verified email
+            address). We never receive your Discord or Roblox password.
           </p>
           <p className="mt-2">
-            Prizes have no cash value and cannot be exchanged for money.
+            <strong>Giveaway activity.</strong> Which giveaways you enter and
+            whether you win, so results can be drawn and displayed.
+          </p>
+          <p className="mt-2">
+            <strong>Technical data.</strong> Your IP address at registration
+            and when entering giveaways. This is used only as a fraud signal to
+            keep giveaways fair (for example, detecting mass fake signups). It
+            is reviewed manually and never used for automatic bans.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            3. Fair play
+            2. How we use your information
           </h2>
           <p>
-            The following are not allowed: using bots or scripts, creating
-            multiple accounts, entering with false information, attempting to
-            manipulate draws, or abusing the Site in any way. We may remove
-            entries, void wins, or ban accounts that break these rules, at our
-            discretion.
+            We use your information to operate your account, run and draw
+            giveaways, display winners publicly (by username), send
+            account-related emails (such as verification and password reset),
+            prevent fraud and abuse, and deliver prizes to winners in Roblox.
+          </p>
+          <p className="mt-2">
+            We do not sell your data, show ads, or use your data for
+            marketing.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            4. Your account
+            3. Cookies
           </h2>
           <p>
-            You are responsible for keeping your login credentials safe and
-            for all activity on your account. If you believe your account has
-            been compromised, reset your password immediately or contact us.
+            The Site uses only essential cookies: a session cookie that keeps
+            you logged in, and security cookies used by Cloudflare Turnstile to
+            protect the registration form from bots. We do not use advertising
+            or tracking cookies.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            5. Availability and changes
+            4. Service providers
           </h2>
           <p>
-            The Site is a free community project provided &quot;as is&quot;.
-            We may modify, pause, or discontinue the Site or any giveaway at
-            any time, including cancelling a giveaway before it ends if
-            necessary (for example, due to fraud or technical problems). We do
-            our best to keep everything running fairly, but we cannot
-            guarantee uninterrupted availability.
+            The Site runs on trusted infrastructure providers that process
+            data on our behalf: Vercel (hosting), Neon (database), Brevo
+            (transactional email), and Cloudflare Turnstile (bot protection).
+            If you use social login, Discord or Roblox process your login on
+            their own platforms under their own privacy policies.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            6. Limitation of liability
+            5. Data retention and deletion
           </h2>
           <p>
-            To the maximum extent permitted by law, the Site and its owner are
-            not liable for any indirect or consequential damages arising from
-            your use of the Site. Our total liability for any claim is limited
-            to the value of the prize in question.
+            Account data is kept while your account exists. Security tokens
+            (email verification and password reset) expire automatically and
+            are stored only as hashes. If you want your account and its data
+            deleted, contact us (see below) and we will remove it.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            7. Not affiliated with Roblox or Discord
+            6. Children
           </h2>
           <p>
-            GAG2 Giveaways is a fan-made community site. It is not endorsed
-            by, affiliated with, or sponsored by Roblox Corporation or Discord
-            Inc. Roblox and Discord are trademarks of their respective owners.
-            Your use of Roblox and Discord is governed by their own terms.
+            The Site is intended for users who meet the minimum age required
+            to use Roblox and to consent to data processing in their country.
+            We do not knowingly collect more data from anyone than described
+            above.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            8. Privacy
+            7. Your rights
           </h2>
           <p>
-            How we handle your data is described in our{" "}
-            <a href="/privacy" className="text-green-400 underline">
-              Privacy Policy
-            </a>
-            .
+            You can ask us to access, correct, or delete the personal data we
+            hold about you at any time.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            9. Changes to these terms
+            8. Contact
           </h2>
           <p>
-            If these terms change, the new version will be posted on this page
-            with an updated date. Continuing to use the Site after a change
-            means you accept the new terms.
+            For any privacy question or request, contact the site owner
+            through the official GAG2 Giveaways community, or reply to any
+            email sent by the Site.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 text-xl font-semibold text-green-300">
-            10. Contact
+            9. Changes
           </h2>
           <p>
-            Questions about these terms? Contact the site owner through the
-            official GAG2 Giveaways community, or reply to any email sent by
-            the Site.
+            If this policy changes, the new version will be posted on this
+            page with an updated date.
           </p>
         </div>
+
+        <p className="text-sm text-gray-400">
+          GAG2 Giveaways is a fan-made community site and is not endorsed by,
+          affiliated with, or sponsored by Roblox Corporation or Discord Inc.
+        </p>
       </section>
     </main>
   );
